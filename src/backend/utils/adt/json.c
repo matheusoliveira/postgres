@@ -68,6 +68,7 @@ static void array_dim_to_json(StringInfo result, int dim, int ndims, int *dims,
 				  bool use_line_feeds);
 static void array_to_json_internal(Datum array, StringInfo result,
 					   bool use_line_feeds);
+static inline bool json_is_valid_number(const char *buf);
 
 /* the null action object used for pure validation */
 static JsonSemAction nullSemAction =
@@ -147,8 +148,6 @@ lex_expect(JsonParseContext ctx, JsonLexContext *lex, JsonTokenType token)
 #define TYPCATEGORY_JSON 'j'
 /* fake category for types that have a cast to json */
 #define TYPCATEGORY_JSON_CAST 'c'
-/* letters appearing in numeric output that aren't valid in a JSON number */
-#define NON_NUMERIC_LETTER "NnAaIiFfTtYy"
 /* chars to consider as part of an alphanumeric token */
 #define JSON_ALPHANUMERIC_CHAR(c)  \
 	(((c) >= 'a' && (c) <= 'z') || \
@@ -1202,6 +1201,25 @@ extract_mb_char(char *s)
 	return res;
 }
 
+static inline bool json_is_valid_number(const char *str)
+{
+	JsonLexContext *lex = makeJsonLexContext(cstring_to_text(str), false);
+	JsonTokenType tok;
+
+	/* Lex exactly one token from the input and check its type. */
+	PG_TRY();
+	{
+		json_lex(lex);
+		tok = lex_peek(lex);
+		return (tok == JSON_TOKEN_NUMBER);
+	}
+	PG_CATCH();
+	{
+		return false;
+	}
+	PG_END_TRY();
+}
+
 /*
  * Turn a scalar Datum into JSON, appending the string to "result".
  *
@@ -1241,10 +1259,9 @@ datum_to_json(Datum val, bool is_null, StringInfo result,
 			/*
 			 * Don't call escape_json here if it's a valid JSON number.
 			 * Numeric output should usually be a valid JSON number and JSON
-			 * numbers shouldn't be quoted. Quote cases like "Nan" and
-			 * "Infinity", however.
+			 * numbers shouldn't be quoted.
 			 */
-			if (strpbrk(outputstr, NON_NUMERIC_LETTER) == NULL)
+			if (json_is_valid_number(outputstr))
 				appendStringInfoString(result, outputstr);
 			else
 				escape_json(result, outputstr);

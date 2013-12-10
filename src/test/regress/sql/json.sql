@@ -325,3 +325,16 @@ select value, json_typeof(value)
                (json '{}'),
                (NULL::json))
       as data(value);
+
+--row_to_json with numeric (and the problematic money) data types
+SELECT row_to_json(a)::json
+    FROM (VALUES(
+        1000::money,
+        1000::numeric,
+        '0.1'::numeric,
+        '-1.0'::numeric,
+        '1.0e100'::double precision,
+        '1.0e-100'::double precision,
+        '1.0e0'::double precision
+    )) a;
+
