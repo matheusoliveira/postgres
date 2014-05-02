@@ -1451,3 +1451,55 @@ ExecReScanModifyTable(ModifyTableState *node)
 	 */
 	elog(ERROR, "ExecReScanModifyTable is not implemented");
 }
+
+void SimpleInsertTuple(Relation relation, HeapTuple tuple)
+{
+	ResultRelInfo	*resultRelInfo;
+	TupleTableSlot	*slot;
+	TupleTableSlot	*ret;
+	TupleDesc 		tupdesc;
+	EState 			*estate = CreateExecutorState();
+	Oid			relation_id;
+
+	tupdesc = RelationGetDescr(relation);
+
+	/*
+	 * We need a ResultRelInfo so we can use the regular executor's
+	 * index-entry-making machinery.
+	 */
+	resultRelInfo = makeNode(ResultRelInfo);
+	resultRelInfo->ri_RangeTableIndex = 1;		/* dummy */
+	resultRelInfo->ri_RelationDesc = relation;
+	resultRelInfo->ri_TrigDesc = CopyTriggerDesc(relation->trigdesc);
+	if (resultRelInfo->ri_TrigDesc)
+	{
+		resultRelInfo->ri_TrigFunctions = (FmgrInfo *)
+			palloc0(resultRelInfo->ri_TrigDesc->numtriggers * sizeof(FmgrInfo));
+		resultRelInfo->ri_TrigWhenExprs = (List **)
+			palloc0(resultRelInfo->ri_TrigDesc->numtriggers * sizeof(List *));
+	}
+	resultRelInfo->ri_TrigInstrument = NULL;
+
+	ExecOpenIndices(resultRelInfo);
+
+	estate->es_result_relations = resultRelInfo;
+	estate->es_num_result_relations = 1;
+	estate->es_result_relation_info = resultRelInfo;
+
+	/* Set up a tuple slot too */
+	slot = ExecInitExtraTupleSlot(estate);
+	ExecSetSlotDescriptor(slot, tupdesc);
+	/* Triggers might need a slot as well */
+	estate->es_trig_tuple_slot = ExecInitExtraTupleSlot(estate);
+
+	ExecStoreTuple(tuple, slot, InvalidBuffer, false);
+	ret = ExecInsert(slot, slot, estate, false);
+
+	/* Free resources */
+	ExecResetTupleTable(estate->es_tupleTable, false);
+	ExecCloseIndices(resultRelInfo);
+	FreeExecutorState(estate);
+	RelationClose(relation);
+
+	return ret;
+}
