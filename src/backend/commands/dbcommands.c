@@ -388,11 +388,18 @@ createdb(const CreatedbStmt *stmt)
 			aclcheck_error(aclresult, ACL_KIND_TABLESPACE,
 						   tablespacename);
 
+
 		/* pg_global must never be the default tablespace */
 		if (dst_deftablespace == GLOBALTABLESPACE_OID)
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				  errmsg("pg_global cannot be used as default tablespace")));
+
+		/* can't create a database on temporary tablespace */
+		if (is_tablespace_storage_temporary(dst_deftablespace))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				  errmsg("cannot create a database on a tablespace in temporary storage")));
 
 		/*
 		 * If we are trying to change the default tablespace of the template,
@@ -1082,6 +1089,12 @@ movedb(const char *dbname, const char *tblspcname)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pg_global cannot be used as default tablespace")));
+
+	/* can't create a database on temporary tablespace */
+	if (is_tablespace_storage_temporary(dst_tblspcoid))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			  errmsg("cannot create a database on a tablespace in temporary storage")));
 
 	/*
 	 * No-op if same tablespace

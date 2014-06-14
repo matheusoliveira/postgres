@@ -1575,6 +1575,46 @@ get_tablespace_name(Oid spc_oid)
 	return result;
 }
 
+/*
+ * is_tablespace_storage_temporary - given a tablespace OID, check if the
+ * underline storage is temporary
+ */
+bool
+is_tablespace_storage_temporary(Oid spc_oid)
+{
+	char	   *result;
+	Relation	rel;
+	HeapScanDesc scandesc;
+	HeapTuple	tuple;
+	ScanKeyData entry[1];
+
+	/*
+	 * Search pg_tablespace.  We use a heapscan here even though there is an
+	 * index on oid, on the theory that pg_tablespace will usually have just a
+	 * few entries and so an indexed lookup is a waste of effort.
+	 */
+	rel = heap_open(TableSpaceRelationId, AccessShareLock);
+
+	ScanKeyInit(&entry[0],
+				ObjectIdAttributeNumber,
+				BTEqualStrategyNumber, F_OIDEQ,
+				ObjectIdGetDatum(spc_oid));
+	scandesc = heap_beginscan_catalog(rel, 1, entry);
+	tuple = heap_getnext(scandesc, ForwardScanDirection);
+
+	/* We assume that there can be at most one matching tuple */
+	/* TODO: Should we check this? If not valid, what is the best assumption? */
+	if (HeapTupleIsValid(tuple))
+		result = ((Form_pg_tablespace) GETSTRUCT(tuple))->spcistempstorage;
+	else
+		result = true;
+
+	heap_endscan(scandesc);
+	heap_close(rel, AccessShareLock);
+
+	return result;
+}
+
 
 /*
  * TABLESPACE resource manager's routines

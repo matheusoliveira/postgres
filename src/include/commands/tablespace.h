@@ -53,6 +53,7 @@ extern void PrepareTempTablespaces(void);
 
 extern Oid	get_tablespace_oid(const char *tablespacename, bool missing_ok);
 extern char *get_tablespace_name(Oid spc_oid);
+extern bool is_tablespace_storage_temporary(Oid spc_oid);
 
 extern bool directory_is_empty(const char *path);
 
