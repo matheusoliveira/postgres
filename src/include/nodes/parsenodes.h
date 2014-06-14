@@ -1670,6 +1670,7 @@ typedef struct CreateTableSpaceStmt
 	NodeTag		type;
 	char	   *tablespacename;
 	char	   *owner;
+	bool	   temporary;
 	char	   *location;
 	List	   *options;
 } CreateTableSpaceStmt;
