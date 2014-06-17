@@ -473,9 +473,9 @@ static Node *makeRecursiveViewSelect(char *relname, List *aliases, Node *query);
 %type <str>		ExistingIndex
 
 %type <list>	constraints_set_list
-%type <boolean> constraints_set_mode
+%type <boolean> constraints_set_mode OptTableSpaceTemporary
 %type <str>		OptTableSpace OptConsTableSpace OptTableSpaceOwner
-%type <ival>	OptTableSpaceTemporary opt_check_option
+%type <ival>	opt_check_option
 
 %type <str>		opt_provider security_label
 
