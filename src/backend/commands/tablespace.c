@@ -154,17 +154,18 @@ TablespaceCreateDbspace(Oid spcNode, Oid dbNode, bool isRedo)
 				{
 					char	   *parentdir;
 
-					/* Failure other than not exists or not in WAL replay? */
-					if (errno != ENOENT || !isRedo)
+					/* Failure other than not exists or not in WAL replay with a non-temp tablespace? */
+					if (errno != ENOENT || !( isRedo || is_tablespace_storage_temporary(spcNode) ) )
 						ereport(ERROR,
 								(errcode_for_file_access(),
 							  errmsg("could not create directory \"%s\": %m",
 									 dir)));
 
 					/*
-					 * Parent directories are missing during WAL replay, so
-					 * continue by creating simple parent directories rather
-					 * than a symlink.
+					 * Parent directories are missing during WAL replay, and
+					 * they can be missing for temp tablespaces, so continue
+					 * by creating simple parent directories rather than a
+					 * symlink.
 					 */
 
 					/* create two parents up if not exist */

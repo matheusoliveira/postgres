@@ -1083,6 +1083,7 @@ OpenTemporaryFileInTablespace(Oid tblspcOid, bool rejectError)
 	char		tempdirpath[MAXPGPATH];
 	char		tempfilepath[MAXPGPATH];
 	File		file;
+	int			parentlevel;
 
 	/*
 	 * Identify the tempfile directory for this tablespace.
@@ -1092,6 +1093,7 @@ OpenTemporaryFileInTablespace(Oid tblspcOid, bool rejectError)
 	if (tblspcOid == DEFAULTTABLESPACE_OID ||
 		tblspcOid == GLOBALTABLESPACE_OID)
 	{
+		parentlevel = 0;
 		/* The default tablespace is {datadir}/base */
 		snprintf(tempdirpath, sizeof(tempdirpath), "base/%s",
 				 PG_TEMP_FILES_DIR);
@@ -1099,8 +1101,11 @@ OpenTemporaryFileInTablespace(Oid tblspcOid, bool rejectError)
 	else
 	{
 		/* All other tablespaces are accessed via symlinks */
-		snprintf(tempdirpath, sizeof(tempdirpath), "pg_tblspc/%u/%s/%s",
-				 tblspcOid, TABLESPACE_VERSION_DIRECTORY, PG_TEMP_FILES_DIR);
+		parentlevel = snprintf(tempdirpath, sizeof(tempdirpath), "pg_tblspc/%u/%s",
+				 tblspcOid, TABLESPACE_VERSION_DIRECTORY);
+		tempdirpath[parentlevel] = '/';
+		snprintf(tempdirpath + parentlevel + 1, sizeof(tempdirpath) - (parentlevel + 1), "%s",
+				 PG_TEMP_FILES_DIR);
 	}
 
 	/*
@@ -1127,6 +1132,12 @@ OpenTemporaryFileInTablespace(Oid tblspcOid, bool rejectError)
 		 * just did the same thing.  If it doesn't work then we'll bomb out on
 		 * the second create attempt, instead.
 		 */
+		if (parentlevel > 0)
+		{
+			tempdirpath[parentlevel] = '\0';
+			mkdir(tempdirpath, S_IRWXU);
+			tempdirpath[parentlevel] = '/';
+		}
 		mkdir(tempdirpath, S_IRWXU);
 
 		file = PathNameOpenFile(tempfilepath,
