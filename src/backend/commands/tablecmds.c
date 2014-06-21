@@ -523,6 +523,15 @@ DefineRelation(CreateStmt *stmt, char relkind, Oid ownerId)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("only shared relations can be placed in pg_global tablespace")));
 
+	/* Can't save relations on temporary tablespace */
+	if (stmt->relation->relpersistence != RELPERSISTENCE_TEMP &&
+		is_tablespace_temp_only(OidIsValid(tablespaceId) ? tablespaceId : MyDatabaseTableSpace))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("this tablespace only allows temporary files")));
+	}
+
 	/* Identify user ID that will own the table */
 	if (!OidIsValid(ownerId))
 		ownerId = GetUserId();
@@ -8823,6 +8832,15 @@ ATPrepSetTableSpace(AlteredTableInfo *tab, Relation rel, char *tablespacename, L
 		aclresult = pg_tablespace_aclcheck(tablespaceId, GetUserId(), ACL_CREATE);
 		if (aclresult != ACLCHECK_OK)
 			aclcheck_error(aclresult, ACL_KIND_TABLESPACE, tablespacename);
+	}
+
+	/* Can't save relations on temporary tablespace */
+	if (rel->rd_rel->relpersistence != RELPERSISTENCE_TEMP &&
+		is_tablespace_temp_only(OidIsValid(tablespaceId) ? tablespaceId : MyDatabaseTableSpace))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("this tablespace only allows temporary files")));
 	}
 
 	/* Save info for Phase 3 to do the real work */

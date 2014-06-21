@@ -199,3 +199,17 @@ get_tablespace_page_costs(Oid spcid,
 			*spc_seq_page_cost = spc->opts->seq_page_cost;
 	}
 }
+
+/*
+ * is_tablespace_temp_only
+ *		Return true if the tablespace only allows temporary files
+ */
+bool
+is_tablespace_temp_only(Oid spcid)
+{
+	TableSpaceCacheEntry *spc = get_tablespace(spcid);
+
+	Assert(spc != NULL);
+
+	return spc->opts->only_temp_files;
+}

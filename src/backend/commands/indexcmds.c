@@ -432,6 +432,15 @@ DefineIndex(Oid relationId,
 						   get_tablespace_name(tablespaceId));
 	}
 
+	/* Can't save relations on temporary tablespace */
+	if (rel->rd_rel->relpersistence != RELPERSISTENCE_TEMP &&
+		is_tablespace_temp_only(OidIsValid(tablespaceId) ? tablespaceId : MyDatabaseTableSpace))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("this tablespace only allows temporary files")));
+	}
+
 	/*
 	 * Force shared indexes into the pg_global tablespace.  This is a bit of a
 	 * hack but seems simpler than marking them in the BKI commands.  On the

@@ -394,6 +394,12 @@ createdb(const CreatedbStmt *stmt)
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				  errmsg("pg_global cannot be used as default tablespace")));
 
+		/* can't create a database on temporary tablespace */
+		if (is_tablespace_temp_only(dst_deftablespace))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				  errmsg("this tablespace only allows temporary files")));
+
 		/*
 		 * If we are trying to change the default tablespace of the template,
 		 * we require that the template not have any files in the new default
@@ -1082,6 +1088,12 @@ movedb(const char *dbname, const char *tblspcname)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pg_global cannot be used as default tablespace")));
+
+	/* can't create a database on temporary tablespace */
+	if (is_tablespace_temp_only(dst_tblspcoid))
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("this tablespace only allows temporary files")));
 
 	/*
 	 * No-op if same tablespace

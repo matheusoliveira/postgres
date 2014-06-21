@@ -15,5 +15,6 @@
 
 void get_tablespace_page_costs(Oid spcid, float8 *spc_random_page_cost,
 						  float8 *spc_seq_page_cost);
+bool is_tablespace_temp_only(Oid spcid);
 
 #endif   /* SPCCACHE_H */
