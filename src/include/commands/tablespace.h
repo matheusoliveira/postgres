@@ -37,6 +37,7 @@ typedef struct TableSpaceOpts
 	int32		vl_len_;		/* varlena header (do not touch directly!) */
 	float8		random_page_cost;
 	float8		seq_page_cost;
+	bool		only_temp_files;
 } TableSpaceOpts;
 
 extern Oid	CreateTableSpace(CreateTableSpaceStmt *stmt);

@@ -71,6 +71,14 @@ static relopt_bool boolRelOpts[] =
 	},
 	{
 		{
+			"only_temp_files",
+			"Allow only temporary files to be created on this tablespace",
+			RELOPT_KIND_TABLESPACE
+		},
+		false
+	},
+	{
+		{
 			"fastupdate",
 			"Enables \"fast update\" feature for this GIN index",
 			RELOPT_KIND_GIN
@@ -1337,7 +1345,8 @@ tablespace_reloptions(Datum reloptions, bool validate)
 	int			numoptions;
 	static const relopt_parse_elt tab[] = {
 		{"random_page_cost", RELOPT_TYPE_REAL, offsetof(TableSpaceOpts, random_page_cost)},
-		{"seq_page_cost", RELOPT_TYPE_REAL, offsetof(TableSpaceOpts, seq_page_cost)}
+		{"seq_page_cost", RELOPT_TYPE_REAL, offsetof(TableSpaceOpts, seq_page_cost)},
+		{"only_temp_files", RELOPT_TYPE_BOOL, offsetof(TableSpaceOpts, only_temp_files)}
 	};
 
 	options = parseRelOptions(reloptions, validate, RELOPT_KIND_TABLESPACE,
