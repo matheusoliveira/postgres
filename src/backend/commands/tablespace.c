@@ -929,6 +929,8 @@ AlterTableSpaceOptions(AlterTableSpaceOptionsStmt *stmt)
 	Oid			tablespaceoid;
 	Datum		datum;
 	Datum		newOptions;
+	TableSpaceOpts *tsopts;
+	TableSpaceOpts *tsoptsOld;
 	Datum		repl_val[Natts_pg_tablespace];
 	bool		isnull;
 	bool		repl_null[Natts_pg_tablespace];
@@ -960,10 +962,20 @@ AlterTableSpaceOptions(AlterTableSpaceOptionsStmt *stmt)
 	/* Generate new proposed spcoptions (text array) */
 	datum = heap_getattr(tup, Anum_pg_tablespace_spcoptions,
 						 RelationGetDescr(rel), &isnull);
+	tsoptsOld = (TableSpaceOpts *) tablespace_reloptions(datum, false);
 	newOptions = transformRelOptions(isnull ? (Datum) 0 : datum,
 									 stmt->options, NULL, NULL, false,
 									 stmt->isReset);
-	(void) tablespace_reloptions(newOptions, true);
+	tsopts = (TableSpaceOpts *) tablespace_reloptions(newOptions, true);
+
+	/* Can't save relations on temporary tablespace */
+	if (tsopts->only_temp_files)
+	{
+		if (!tsoptsOld->only_temp_files)
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				  errmsg("cannot alter a tablespace to become temporary")));
+	}
 
 	/* Build new tuple. */
 	memset(repl_null, false, sizeof(repl_null));
