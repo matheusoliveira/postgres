@@ -76,6 +76,7 @@
 #include "storage/ipc.h"
 #include "utils/guc.h"
 #include "utils/resowner_private.h"
+#include "utils/spccache.h"
 
 
 /*
@@ -1132,6 +1133,24 @@ OpenTemporaryFileInTablespace(Oid tblspcOid, bool rejectError)
 		file = PathNameOpenFile(tempfilepath,
 								O_RDWR | O_CREAT | O_TRUNC | PG_BINARY,
 								0600);
+		/* On a temporary tablespace, we need to recreate its structure */
+		if (file <= 0 && is_tablespace_temp_only(tblspcOid))
+		{
+			/*
+			 * XXX: Should we only do that for temp tablespace? Or blindly do for
+			 * any tablespace?
+			 */
+			char		*parentdir;
+			parentdir = pstrdup(tempdirpath);
+			get_parent_directory(parentdir);
+			/* As above, don't check error for mkdir */
+			mkdir(parentdir, S_IRWXU);
+			pfree(parentdir);
+
+			file = PathNameOpenFile(tempfilepath,
+									O_RDWR | O_CREAT | O_TRUNC | PG_BINARY,
+									0600);
+		}
 		if (file <= 0 && rejectError)
 			elog(ERROR, "could not create temporary file \"%s\": %m",
 				 tempfilepath);
