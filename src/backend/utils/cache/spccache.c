@@ -220,5 +220,11 @@ is_tablespace_temp_only(Oid spcid)
 
 	Assert(spc != NULL);
 
+	if (spc->opts == NULL)
+	{
+		/* no options, so this tablespace can't be considered temporary */
+		return false;
+	}
+
 	return spc->opts->only_temp_files;
 }
