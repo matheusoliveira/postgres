@@ -207,7 +207,16 @@ get_tablespace_page_costs(Oid spcid,
 bool
 is_tablespace_temp_only(Oid spcid)
 {
-	TableSpaceCacheEntry *spc = get_tablespace(spcid);
+	TableSpaceCacheEntry *spc;
+
+	/*
+	 * pg_global and pg_default are never temporary, so no need to
+	 * check the cache
+	 */
+	if (spcid == GLOBALTABLESPACE_OID || spcid == DEFAULTTABLESPACE_OID)
+		return false;
+
+	spc = get_tablespace(spcid);
 
 	Assert(spc != NULL);
 
