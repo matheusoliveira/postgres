@@ -44,6 +44,10 @@ OBJS += ip.o md5.o
 # utils/mb
 OBJS += encnames.o wchar.o
 
+ifeq ($(with_openssl),yes)
+OBJS += fe-secure-openssl.o
+endif
+
 ifeq ($(PORTNAME), cygwin)
 override shlib = cyg$(NAME)$(DLSUFFIX)
 endif
@@ -70,7 +74,7 @@ else
 SHLIB_LINK += $(filter -lcrypt -ldes -lcom_err -lcrypto -lk5crypto -lkrb5 -lgssapi32 -lssl -lsocket -lnsl -lresolv -lintl $(PTHREAD_LIBS), $(LIBS)) $(LDAP_LIBS_FE)
 endif
 ifeq ($(PORTNAME), win32)
-SHLIB_LINK += -lshfolder -lwsock32 -lws2_32 -lsecur32 $(filter -leay32 -lssleay32 -lcomerr32 -lkrb5_32, $(LIBS))
+SHLIB_LINK += -lshfolder -lws2_32 -lsecur32 $(filter -leay32 -lssleay32 -lcomerr32 -lkrb5_32, $(LIBS))
 endif
 
 SHLIB_EXPORTS = exports.txt

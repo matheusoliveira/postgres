@@ -125,9 +125,6 @@ extern char *default_tablespace;
 extern char *temp_tablespaces;
 extern bool ignore_checksum_failure;
 extern bool synchronize_seqscans;
-extern char *SSLCipherSuites;
-extern char *SSLECDHCurve;
-extern bool SSLPreferServerCiphers;
 
 #ifdef TRACE_SORT
 extern bool trace_sort;
@@ -198,6 +195,7 @@ static void assign_effective_io_concurrency(int newval, void *extra);
 static void assign_pgstat_temp_directory(const char *newval, void *extra);
 static bool check_application_name(char **newval, void **extra, GucSource source);
 static void assign_application_name(const char *newval, void *extra);
+static bool check_cluster_name(char **newval, void **extra, GucSource source);
 static const char *show_unix_socket_permissions(void);
 static const char *show_log_file_mode(void);
 
@@ -443,6 +441,7 @@ int			temp_file_limit = -1;
 
 int			num_temp_buffers = 1024;
 
+char	   *cluster_name = "";
 char	   *data_directory;
 char	   *ConfigFileName;
 char	   *HbaFileName;
@@ -3017,7 +3016,7 @@ static struct config_string ConfigureNamesString[] =
 			NULL
 		},
 		&event_source,
-		"PostgreSQL",
+		DEFAULT_EVENT_SOURCE,
 		NULL, NULL, NULL
 	},
 
@@ -3259,6 +3258,17 @@ static struct config_string ConfigureNamesString[] =
 		&application_name,
 		"",
 		check_application_name, assign_application_name, NULL
+	},
+
+	{
+		{"cluster_name", PGC_POSTMASTER, LOGGING_WHAT,
+			gettext_noop("Sets the name of the cluster which is included in the process title."),
+			NULL,
+			GUC_IS_NAME
+		},
+		&cluster_name,
+		"",
+		check_cluster_name, NULL, NULL
 	},
 
 	/* End-of-list marker */
@@ -4329,6 +4339,13 @@ SelectConfigFiles(const char *userDoption, const char *progname)
 		return false;
 	}
 
+	/*
+	 * Read the configuration file for the first time. This time only
+	 * data_directory parameter is picked up to determine the data directory
+	 * so that we can read PG_AUTOCONF_FILENAME file next time. Then don't
+	 * forget to read the configuration file again later to pick up all the
+	 * parameters.
+	 */
 	ProcessConfigFile(PGC_POSTMASTER);
 
 	/*
@@ -9468,6 +9485,21 @@ assign_application_name(const char *newval, void *extra)
 {
 	/* Update the pg_stat_activity view */
 	pgstat_report_appname(newval);
+}
+
+static bool
+check_cluster_name(char **newval, void **extra, GucSource source)
+{
+	/* Only allow clean ASCII chars in the cluster name */
+	char	   *p;
+
+	for (p = *newval; *p; p++)
+	{
+		if (*p < 32 || *p > 126)
+			*p = '?';
+	}
+
+	return true;
 }
 
 static const char *

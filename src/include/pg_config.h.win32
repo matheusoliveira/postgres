@@ -276,9 +276,6 @@
 /* Define to 1 if the PS_STRINGS thing exists. */
 /* #undef HAVE_PS_STRINGS */
 
-/* Define if you have POSIX threads libraries and header files. */
-/* #undef HAVE_PTHREAD */
-
 /* Define to 1 if you have the <pwd.h> header file. */
 #define HAVE_PWD_H 1
 
@@ -339,6 +336,9 @@
 
 /* Define to 1 if you have the `srandom' function. */
 /* #undef HAVE_SRANDOM */
+
+/* Define to 1 if you have the `SSL_get_current_compression' function. */
+#define HAVE_SSL_GET_CURRENT_COMPRESSION 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 /* #undef HAVE_STDINT_H */
@@ -578,10 +578,6 @@
 /* A string containing the version number, platform, and C compiler */
 #define PG_VERSION_STR "Uninitialized version string (win32)"
 
-/* Define to the necessary symbol if this constant uses a non-standard name on
-   your system. */
-/* #undef PTHREAD_CREATE_JOINABLE */
-
 /* The size of `long', as computed by sizeof. */
 #define SIZEOF_LONG 4
 
@@ -632,14 +628,14 @@
 /* Define to select named POSIX semaphores. */
 /* #undef USE_NAMED_POSIX_SEMAPHORES */
 
+/* Define to build with OpenSSL support. (--with-openssl) */
+/* #undef USE_OPENSSL */
+
 /* Define to 1 to build with PAM support. (--with-pam) */
 /* #undef USE_PAM */
 
 /* Use replacement snprintf() functions. */
 #define USE_REPL_SNPRINTF 1
-
-/* Define to build with (Open)SSL support. (--with-openssl) */
-/* #undef USE_SSL */
 
 /* Define to select SysV-style semaphores. */
 /* #undef USE_SYSV_SEMAPHORES */
