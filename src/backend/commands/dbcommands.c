@@ -60,6 +60,7 @@
 #include "utils/snapmgr.h"
 #include "utils/syscache.h"
 #include "utils/tqual.h"
+#include "utils/spccache.h"
 
 
 typedef struct
